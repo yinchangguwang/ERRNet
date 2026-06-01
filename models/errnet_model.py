@@ -288,11 +288,40 @@ class ERRNetModel(ERRNetBase):
             self.loss_G += self.loss_G_GAN*self.opt.lambda_gan
         
         if self.aligned:
-            self.loss_icnn_pixel = self.loss_dic['t_pixel'].get_loss(
-                self.output_i, self.target_t)
             
-            self.loss_icnn_vgg = self.loss_dic['t_vgg'].get_loss(
-                self.output_i, self.target_t)
+            if hasattr(self, 'output_stage1'):
+                
+                loss_pixel1 = self.loss_dic['t_pixel'].get_loss(
+                    self.output_stage1, self.target_t)
+                loss_pixel2 = self.loss_dic['t_pixel'].get_loss(
+                    self.output_stage2, self.target_t)
+                loss_pixel3 = self.loss_dic['t_pixel'].get_loss(
+                    self.output_stage3, self.target_t)
+                self.loss_icnn_pixel = (
+                    0.5 * loss_pixel1 
+                    + 0.7 * loss_pixel2 
+                    + 1.0 * loss_pixel3
+                )
+                
+                vgg1 = self.loss_dic['t_vgg'].get_loss(
+                    self.output_stage1, self.target_t)
+                vgg2 = self.loss_dic['t_vgg'].get_loss(
+                    self.output_stage2, self.target_t)
+                vgg3 = self.loss_dic['t_vgg'].get_loss(
+                    self.output_stage3, self.target_t)
+                self.loss_icnn_vgg = (
+                    0.5 * vgg1 
+                    + 0.7 * vgg2 
+                    + 1.0 * vgg3
+                )
+                
+            else:
+                
+                self.loss_icnn_pixel = self.loss_dic['t_pixel'].get_loss(
+                    self.output_i, self.target_t)
+                
+                self.loss_icnn_vgg = self.loss_dic['t_vgg'].get_loss(
+                    self.output_i, self.target_t)
 
             self.loss_G += self.loss_icnn_pixel+self.loss_icnn_vgg*self.opt.lambda_vgg
         else:
@@ -314,11 +343,17 @@ class ERRNetModel(ERRNetBase):
             input_i.extend(hypercolumn)
             input_i = torch.cat(input_i, dim=1)
 
-        output_i = self.net_i(input_i)
+        outputs = self.net_i(input_i)
+        
+        if isinstance(outputs, tuple):
+            self.output_stage1 = outputs[0]
+            self.output_stage2 = outputs[1]
+            self.output_stage3 = outputs[2]
+            self.output_i = self.output_stage3
+        else:
+            self.output_i = outputs
 
-        self.output_i = output_i
-
-        return output_i
+        return self.output_i
         
     def optimize_parameters(self):
         self._train()
