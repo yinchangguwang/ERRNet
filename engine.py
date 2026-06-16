@@ -15,6 +15,8 @@ class Engine(object):
         self.visualizer = None
         self.model = None
         self.best_val_loss = 1e6
+        self.best_val_score = None
+        self.best_joint_score = None
 
         self.__setup()
 
@@ -82,7 +84,7 @@ class Engine(object):
         # model.update_learning_rate()
         train_loader.reset()
 
-    def eval(self, val_loader, dataset_name, savedir=None, loss_key=None, **kwargs):
+    def eval(self, val_loader, dataset_name, savedir=None, loss_key=None, maximize=False, **kwargs):
         
         avg_meters = util.AverageMeters()
         model = self.model
@@ -98,14 +100,29 @@ class Engine(object):
             util.write_loss(self.writer, join('eval', dataset_name), avg_meters, self.epoch)
         
         if loss_key is not None:
-            val_loss = avg_meters[loss_key]
-            if val_loss < self.best_val_loss:
-                self.best_val_loss = val_loss
-                print('saving the best model at the end of epoch %d, iters %d' % 
-                    (self.epoch, self.iterations))
+            val_score = avg_meters[loss_key]
+            is_better = (
+                self.best_val_score is None or
+                (maximize and val_score > self.best_val_score) or
+                ((not maximize) and val_score < self.best_val_score)
+            )
+            if is_better:
+                self.best_val_score = val_score
+                self.best_val_loss = val_score
+                print('saving the best model at the end of epoch %d, iters %d, %s %.4f' %
+                    (self.epoch, self.iterations, loss_key, val_score))
                 model.save(label='best_{}_{}'.format(loss_key, dataset_name))
 
         return avg_meters
+
+    def save_best_score(self, score, label, message):
+        is_better = self.best_joint_score is None or score > self.best_joint_score
+        if is_better:
+            self.best_joint_score = score
+            print('saving the best model at the end of epoch %d, iters %d, %s %.4f' %
+                (self.epoch, self.iterations, message, score))
+            self.model.save(label=label)
+        return is_better
 
     def test(self, test_loader, savedir=None, **kwargs):
         model = self.model

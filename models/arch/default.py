@@ -28,20 +28,17 @@ class PyramidPooling(nn.Module):
 class SELayer(nn.Module):
     def __init__(self, channel, reduction=16):
         super(SELayer, self).__init__()
-        self.avg_pool = nn.AdaptiveAvgPool2d(1)
-        self.fc = nn.Sequential(
-                nn.Linear(channel, channel // reduction),
-                nn.ReLU(inplace=True),
-                nn.Linear(channel // reduction, channel),
-                nn.Sigmoid()
+        hidden = max(channel // reduction, 1)
+        self.pool = nn.AdaptiveAvgPool2d(1)
+        self.attention = nn.Sequential(
+            nn.Conv2d(channel, hidden, kernel_size=1, bias=True),
+            nn.ReLU(True),
+            nn.Conv2d(hidden, channel, kernel_size=1, bias=True),
+            nn.Sigmoid(),
         )
 
     def forward(self, x):
-        b, c, _, _ = x.size()
-        y = self.avg_pool(x).view(b, c)
-        y = self.fc(y).view(b, c, 1, 1)
-        
-        return x * y        
+        return x * self.attention(self.pool(x))
      
 
 class DRNet(torch.nn.Module):

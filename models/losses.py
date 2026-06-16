@@ -32,6 +32,16 @@ class GradientLoss(nn.Module):
         return self.loss(predict_gradx, target_gradx) + self.loss(predict_grady, target_grady)
 
 
+class CharbonnierLoss(nn.Module):
+    def __init__(self, eps=1e-3):
+        super(CharbonnierLoss, self).__init__()
+        self.eps = eps
+
+    def forward(self, predict, target):
+        diff = predict - target
+        return torch.mean(torch.sqrt(diff * diff + self.eps * self.eps))
+
+
 class MultipleLoss(nn.Module):
     def __init__(self, losses, weight=None):
         super(MultipleLoss, self).__init__()
@@ -255,7 +265,19 @@ def init_loss(opt, tensor):
     loss_dic = {}
 
     pixel_loss = ContentLoss()
-    pixel_loss.initialize(MultipleLoss([nn.MSELoss(), GradientLoss()], [0.2,0.4]))
+    if opt.recon_loss == 'mse':
+        recon_loss = nn.MSELoss()
+    elif opt.recon_loss == 'l1':
+        recon_loss = nn.L1Loss()
+    elif opt.recon_loss == 'charbonnier':
+        recon_loss = CharbonnierLoss()
+    else:
+        raise ValueError("Reconstruction loss [%s] not recognized." % opt.recon_loss)
+
+    pixel_loss.initialize(MultipleLoss(
+        [recon_loss, GradientLoss()],
+        [opt.lambda_recon, opt.lambda_grad],
+    ))
 
     loss_dic['t_pixel'] = pixel_loss
     loss_dic['r_pixel'] = pixel_loss

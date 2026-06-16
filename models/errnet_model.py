@@ -248,13 +248,12 @@ class ERRNetModel(ERRNetBase):
             self.netD = networks.define_D(opt, 3)
             self.optimizer_D = torch.optim.Adam(self.netD.parameters(),
                                             lr=opt.lr, betas=(0.9, 0.999))
-            self._init_optimizer([self.optimizer_D])
 
             # initialize optimizers
             self.optimizer_G = torch.optim.Adam(self.net_i.parameters(), 
                 lr=opt.lr, betas=(0.9, 0.999), weight_decay=opt.wd)
 
-            self._init_optimizer([self.optimizer_G])
+            self._init_optimizer([self.optimizer_G, self.optimizer_D])
 
         if opt.resume:
             self.load(self, opt.resume_epoch)
@@ -354,7 +353,7 @@ class ERRNetModel(ERRNetBase):
             self.output_i = outputs
 
         return self.output_i
-        
+
     def optimize_parameters(self):
         self._train()
         self.forward()

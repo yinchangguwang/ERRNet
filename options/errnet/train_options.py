@@ -13,7 +13,7 @@ class TrainOptions(BaseOptions):
         self.parser.add_argument('--debug', action='store_true', help='only do one epoch and displays at each iteration')
 
         # for training (Note: in train_errnet.py, we mannually tune the training protocol, but you can also use following setting by modifying the code in errnet_model.py)
-        self.parser.add_argument('--nEpochs', '-n', type=int, default=60, help='# of epochs to run')
+        self.parser.add_argument('--nEpochs', '-n', type=int, default=70, help='# of epochs to run')
         self.parser.add_argument('--lr', type=float, default=1e-4, help='initial learning rate for adam')
         self.parser.add_argument('--wd', type=float, default=0, help='weight decay for adam')
 
@@ -39,5 +39,19 @@ class TrainOptions(BaseOptions):
         
         self.parser.add_argument('--lambda_gan', type=float, default=0.01, help='weight for gan loss')
         self.parser.add_argument('--lambda_vgg', type=float, default=0.1, help='weight for vgg loss')
+        self.parser.add_argument('--recon_loss', type=str, default='charbonnier', choices=['charbonnier', 'l1', 'mse'], help='main reconstruction loss')
+        self.parser.add_argument('--lambda_recon', type=float, default=1.0, help='weight for reconstruction loss')
+        self.parser.add_argument('--lambda_grad', type=float, default=0.3, help='weight for image gradient loss')
+        self.parser.add_argument('--gan_start_epoch', type=int, default=55, help='epoch to enable GAN loss; set negative to disable GAN')
+        self.parser.add_argument('--gan_weight', type=float, default=0.001, help='GAN loss weight after gan_start_epoch')
+        self.parser.add_argument('--initial_fusion_ratio', type=str, default='0.7,0.3', help='synthetic,real fusion ratio before finetune stage')
+        self.parser.add_argument('--finetune_epoch', type=int, default=45, help='epoch to switch to real-heavy finetuning; set negative to disable')
+        self.parser.add_argument('--finetune_fusion_ratio', type=str, default='0.4,0.6', help='synthetic,real fusion ratio after finetune_epoch')
+        self.parser.add_argument('--finetune_lr', type=float, default=5e-6, help='learning rate after finetune_epoch')
+        self.parser.add_argument('--eval_freq', type=int, default=5, help='frequency of validation evaluation in epochs')
+        self.parser.add_argument('--best_metric', type=str, default='PSNR', choices=['PSNR', 'SSIM', 'NCC', 'LMSE'], help='metric for saving best validation checkpoint')
+        self.parser.add_argument('--best_dataset', type=str, default='joint', choices=['ceilnet_table2', 'real20', 'joint'], help='validation dataset used for best checkpoint selection')
+        self.parser.add_argument('--joint_ceilnet_weight', type=float, default=0.4, help='CEILNet Table2 weight for joint best checkpoint selection')
+        self.parser.add_argument('--joint_real20_weight', type=float, default=0.6, help='real20 weight for joint best checkpoint selection')
         
         self.isTrain = True

@@ -253,10 +253,7 @@ class Discriminator_VGG(nn.Module):
         ]
 
         tail = [
-            nn.AdaptiveAvgPool2d(1),
-            nn.Conv2d(512, 1024, kernel_size=1),
-            nn.LeakyReLU(0.2),
-            nn.Conv2d(1024, 1, kernel_size=1)
+            nn.AdaptiveAvgPool2d(1)
         ]
 
         if use_sigmoid:
@@ -268,4 +265,4 @@ class Discriminator_VGG(nn.Module):
     def forward(self, x):
         x = self.body(x)
         out = self.tail(x)
-        return out
+        return out.mean(dim=1, keepdim=True)

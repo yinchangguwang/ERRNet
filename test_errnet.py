@@ -41,6 +41,11 @@ EVAL_DATASETS = {
         "path": "sir2_withgt",
         "save_subdir": "sir2_withgt",
     },
+    "my5": {
+        "dataset_name": "testdata_my5",
+        "path": "my5",
+        "save_subdir": "my5",
+    },
 }
 
 TEST_DATASETS = {
